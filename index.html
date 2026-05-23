@@ -51,7 +51,6 @@
 
     /* ── scene / card shell ── */
     .scene {
-      perspective: 1400px;
       width: min(400px, 92vw);
       height: min(560px, 130vw);
       position: relative; z-index: 10;
@@ -59,21 +58,22 @@
     }
     .card {
       width:100%; height:100%;
-      -webkit-transform-style: preserve-3d;
-      transform-style: preserve-3d;
-      transition: transform 1.15s cubic-bezier(.645,.045,.355,1);
       position:relative;
       filter: drop-shadow(0 8px 60px rgba(90,10,160,.45));
+      transition: filter .3s;
     }
     .card:hover { filter:drop-shadow(0 12px 80px rgba(110,20,190,.60)); }
-    .card.flipped { transform: rotateY(-180deg); }
 
     /* ── both faces ── */
     .face {
       position:absolute; inset:0;
       border-radius:18px;
-      -webkit-backface-visibility: hidden;
-      backface-visibility: hidden;
+      transition: opacity .42s ease, transform .42s ease;
+    }
+    .face.hide {
+      opacity: 0;
+      transform: scale(.96);
+      pointer-events: none;
     }
 
     /* ── FRONT ── */
@@ -133,7 +133,6 @@
     .face-back {
       background: linear-gradient(155deg,#0c0620 0%,#160930 45%,#100720 100%);
       border: 1px solid rgba(155,80,235,.18);
-      transform: rotateY(180deg);
       display:flex; flex-direction:column;
       padding: clamp(24px,5vw,34px) clamp(22px,5vw,30px);
       overflow:hidden;
@@ -253,27 +252,29 @@
           <p>To the one who deserves gentleness,</p>
         </div>
 
-        <div class="lbody"></div>
-        <p>
-          I know I overreacted, and I honestly shouldn’t have acted that way. I let my emotions get the better of me and ended up saying things that probably hurt you, and I’m really sorry for that.
-        </p>
+        <!-- FIXED: The paragraphs are now properly placed INSIDE the lbody wrapper -->
+        <div class="lbody">
+          <p>
+            I know I overreacted, and I honestly shouldn’t have acted that way. I let my emotions get the better of me and ended up saying things that probably hurt you, and I’m really sorry for that.
+          </p>
 
-        <p class="it">
-          You didn’t deserve it at all. And what honestly made me realize my mistake even more was how understanding and patient you were through everything. Most people would’ve reacted differently, but you still handled it with so much kindness.
-        </p>
+          <p class="it">
+            You didn’t deserve it at all. And what honestly made me realize my mistake even more was how understanding and patient you were through everything. Most people would’ve reacted differently, but you still handled it with so much kindness.
+          </p>
 
-        <p>
-          That’s something I really admire about you. You have such a caring heart, and the way you stay calm and understanding even in difficult moments says a lot about the kind of person you are.
-        </p>
+          <p>
+            That’s something I really admire about you. You have such a caring heart, and the way you stay calm and understanding even in difficult moments says a lot about the kind of person you are.
+          </p>
 
-        <p class="str">
-          I never want to be someone who makes you feel upset when you deserve so much better than that. Thank you for being patient with me, and thank you for being the amazing person you are. 💜
-        </p>
+          <p class="str">
+            I never want to be someone who makes you feel upset when you deserve so much better than that. Thank you for being patient with me, and thank you for being the amazing person you are. 💜
+          </p>
         </div>
-      </div>
+        
+      </div> <!-- End of face-back -->
 
-    </div>
-  </div>
+    </div> <!-- End of card -->
+  </div> <!-- End of scene -->
 
   <button class="flip-btn" id="flipBtn" aria-label="Flip card">
     <span id="btnLabel">Open the letter</span>
@@ -288,30 +289,31 @@
     const label     = document.getElementById('btnLabel');
     const faceFront = document.getElementById('faceFront');
     const faceBack  = document.getElementById('faceBack');
-    const HALF      = 575; // ms — halfway through 1.15s animation
     let flipped     = false;
     let busy        = false;
 
-    // Initial state: back face invisible so nothing bleeds through
-    faceBack.style.visibility = 'hidden';
+    // Start: back face hidden
+    faceBack.classList.add('hide');
 
     function doFlip() {
       if (busy) return;
       busy = true;
       flipped = !flipped;
 
-      card.classList.toggle('flipped', flipped);
-      card.style.transform = '';
       label.textContent = flipped ? 'Back to cover' : 'Open the letter';
       btn.classList.toggle('back', flipped);
 
-      // Swap which face is visible at the exact midpoint
-      setTimeout(() => {
-        faceFront.style.visibility = flipped ? 'hidden' : 'visible';
-        faceBack.style.visibility  = flipped ? 'visible' : 'hidden';
-      }, HALF);
+      if (flipped) {
+        // Fade out front, then fade in back
+        faceFront.classList.add('hide');
+        setTimeout(() => { faceBack.classList.remove('hide'); }, 420);
+      } else {
+        // Fade out back, then fade in front
+        faceBack.classList.add('hide');
+        setTimeout(() => { faceFront.classList.remove('hide'); }, 420);
+      }
 
-      setTimeout(() => { busy = false; }, 1200);
+      setTimeout(() => { busy = false; }, 900);
     }
 
     btn.addEventListener('click', doFlip);
@@ -322,27 +324,13 @@
     scene.addEventListener('mousemove', (e) => {
         if (flipped) return;
         const r  = scene.getBoundingClientRect();
-        const dx =
-            (e.clientX - r.left - r.width / 2) /
-            (r.width / 2);
-
-        const dy =
-            (e.clientY - r.top - r.height / 2) /
-            (r.height / 2);
-
-        // IMPORTANT:
-        // apply hover tilt WITHOUT breaking flip transform
-
-        card.style.transform =
-            `rotateY(${dx * 6}deg) rotateX(${-dy * 5}deg)`;
-
+        const dx = (e.clientX - r.left - r.width / 2) / (r.width / 2);
+        const dy = (e.clientY - r.top - r.height / 2) / (r.height / 2);
+        card.style.transform = `rotateY(${dx * 4}deg) rotateX(${-dy * 3}deg)`;
     });
 
     scene.addEventListener('mouseleave', () => {
-        // reset ONLY when not flipped
-        if (!flipped) {
-            card.style.transform = '';
-        }
+        card.style.transform = '';
     });
 
     /* floating background symbols */
