@@ -66,6 +66,7 @@
       filter: drop-shadow(0 8px 60px rgba(90,10,160,.45));
     }
     .card:hover { filter:drop-shadow(0 12px 80px rgba(110,20,190,.60)); }
+    .card.flipped { transform: rotateY(-180deg); }
 
     /* ── both faces ── */
     .face {
@@ -252,21 +253,24 @@
           <p>To the one who deserves gentleness,</p>
         </div>
 
+        <div class="lbody"></div>
         <p>
-        I know I overreacted, and I honestly shouldn’t have acted that way. I let my emotions get the better of me and ended up saying things that probably hurt you, and I’m really sorry for that.
+          I know I overreacted, and I honestly shouldn’t have acted that way. I let my emotions get the better of me and ended up saying things that probably hurt you, and I’m really sorry for that.
         </p>
 
         <p class="it">
-        You didn’t deserve it at all. And what honestly made me realize my mistake even more was how understanding and patient you were through everything. Most people would’ve reacted differently, but you still handled it with so much kindness.
+          You didn’t deserve it at all. And what honestly made me realize my mistake even more was how understanding and patient you were through everything. Most people would’ve reacted differently, but you still handled it with so much kindness.
         </p>
 
         <p>
-        That’s something I really admire about you. You have such a caring heart, and the way you stay calm and understanding even in difficult moments says a lot about the kind of person you are.
+          That’s something I really admire about you. You have such a caring heart, and the way you stay calm and understanding even in difficult moments says a lot about the kind of person you are.
         </p>
 
         <p class="str">
-        I never want to be someone who makes you feel upset when you deserve so much better than that. Thank you for being patient with me, and thank you for being the amazing person you are. 💜
+          I never want to be someone who makes you feel upset when you deserve so much better than that. Thank you for being patient with me, and thank you for being the amazing person you are. 💜
         </p>
+        </div>
+
         <div class="lsign">
           <p>With all the love I have — always yours</p>
         </div>
@@ -282,88 +286,84 @@
     </svg>
   </button>
 
-    <script>
-        const card  = document.getElementById('card');
-        const btn   = document.getElementById('flipBtn');
-        const label = document.getElementById('btnLabel');
-        const scene = document.getElementById('scene');
+  <script>
+    const card      = document.getElementById('card');
+    const btn       = document.getElementById('flipBtn');
+    const label     = document.getElementById('btnLabel');
+    const faceFront = document.getElementById('faceFront');
+    const faceBack  = document.getElementById('faceBack');
+    const HALF      = 575; // ms — halfway through 1.15s animation
+    let flipped     = false;
+    let busy        = false;
 
-        let flipped = false;
-        let busy = false;
+    // Initial state: back face invisible so nothing bleeds through
+    faceBack.style.visibility = 'hidden';
 
-        function renderCard(dx = 0, dy = 0) {
-            let rotateY = flipped ? -180 : 0;
-            card.style.transform =
-            `rotateY(${rotateY + dx}deg) rotateX(${dy}deg)`;
-        }
+    function doFlip() {
+      if (busy) return;
+      busy = true;
+      flipped = !flipped;
 
-        function doFlip() {
-            if (busy) return;
-            busy = true;
-            flipped = !flipped;
-            renderCard();
-            label.textContent =
-            flipped ? 'Back to cover' : 'Open the letter';
-            btn.classList.toggle('back', flipped);
-            setTimeout(() => {
-            busy = false;
-            }, 1150);
-        }
+      card.classList.toggle('flipped', flipped);
+      card.style.transform = '';
+      label.textContent = flipped ? 'Back to cover' : 'Open the letter';
+      btn.classList.toggle('back', flipped);
 
-        btn.addEventListener('click', doFlip);
-        card.addEventListener('click', doFlip);
+      // Swap which face is visible at the exact midpoint
+      setTimeout(() => {
+        faceFront.style.visibility = flipped ? 'hidden' : 'visible';
+        faceBack.style.visibility  = flipped ? 'visible' : 'hidden';
+      }, HALF);
 
-        scene.addEventListener('mousemove', (e) => {
+      setTimeout(() => { busy = false; }, 1200);
+    }
 
-            if (flipped) return;
+    btn.addEventListener('click', doFlip);
+    card.addEventListener('click', doFlip);
 
-            const r = scene.getBoundingClientRect();
-
-            const dx =
+    /* subtle parallax tilt on front */
+    const scene = document.getElementById('scene');
+    scene.addEventListener('mousemove', (e) => {
+        if (flipped) return;
+        const r  = scene.getBoundingClientRect();
+        const dx =
             (e.clientX - r.left - r.width / 2) /
             (r.width / 2);
 
-            const dy =
+        const dy =
             (e.clientY - r.top - r.height / 2) /
             (r.height / 2);
 
-            renderCard(dx * 6, -dy * 5);
+        // IMPORTANT:
+        // apply hover tilt WITHOUT breaking flip transform
 
-        });
+        card.style.transform =
+            `rotateY(${dx * 6}deg) rotateX(${-dy * 5}deg)`;
 
-        scene.addEventListener('mouseleave', () => {
+    });
 
-            if (!flipped) {
-            renderCard(0, 0);
-            }
+    scene.addEventListener('mouseleave', () => {
+        // reset ONLY when not flipped
+        if (!flipped) {
+            card.style.transform = '';
+        }
+    });
 
-        });
-
-        /* floating background symbols */
-        (function () {
-            const canvas = document.getElementById('floatCanvas');
-            const SYMS = ['♡','✿','✦','✾','❀','♥','✽'];
-            for (let i = 0; i < 55; i++) {
-            const el = document.createElement('span');
-            el.className = 'fsym';
-            const size = 8 + Math.random() * 11;
-            const dur = 18 + Math.random() * 28;
-            const delay = -(Math.random() * dur);
-
-            el.textContent =
-                SYMS[Math.floor(Math.random() * SYMS.length)];
-
-            el.style.cssText = `
-                left:${Math.random() * 100}vw;
-                bottom:-20px;
-                font-size:${size}px;
-                opacity:${0.06 + Math.random() * .11};
-                animation-duration:${dur}s;
-                animation-delay:${delay}s;
-            `;
-            canvas.appendChild(el);
-            }
-        })();
-</script>
+    /* floating background symbols */
+    (function() {
+      const canvas = document.getElementById('floatCanvas');
+      const SYMS   = ['♡','✿','✦','✾','❀','♥','✽'];
+      for (let i = 0; i < 55; i++) {
+        const el   = document.createElement('span');
+        el.className = 'fsym';
+        const size = 8 + Math.random() * 11;
+        const dur  = 18 + Math.random() * 28;
+        const delay= -(Math.random() * dur);
+        el.textContent   = SYMS[Math.floor(Math.random() * SYMS.length)];
+        el.style.cssText = `left:${Math.random()*100}vw;bottom:-20px;font-size:${size}px;opacity:${0.06+Math.random()*.11};animation-duration:${dur}s;animation-delay:${delay}s;`;
+        canvas.appendChild(el);
+      }
+    })();
+  </script>
 </body>
 </html>
